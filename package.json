@@ -1,13 +1,16 @@
 {
-	"name": "avakin-backend",
+	"name": "avakin-backend-bot",
 	"version": "1.0.0",
-	"description": "Backend server for Avakin command system.",
-	"main": "api/index.js",
+	"description": "Discord bot and backend for Avakin command system.",
+	"main": "index.js",
 	"scripts": {
 		"start": "node index.js",
 		"postinstall": "node deploy-commands.js"
 	},
 	"dependencies": {
-		"express": "^4.18.2"
+		"axios": "^1.7.2",
+		"discord.js": "^14.15.3",
+		"dotenv": "^16.4.5",
+		"express": "^4.19.2"
 	}
 }
