@@ -1,67 +1,71 @@
-const express = require('express');
-const app = express();
-app.use(express.json()); // Middleware to parse JSON bodies
+ï»¿const { Client, GatewayIntentBits } = require('discord.js');
+const axios = require('axios');
+require('dotenv').config(); // Ù„Ø¶Ù…Ø§Ù† Ù‚Ø±Ø§Ø¡Ø© Ù…ØªØºÙŠØ±Ø§Øª Ø§Ù„Ø¨ÙŠØ¦Ø© ÙÙŠ ÙƒÙ„ Ø§Ù„Ø¨ÙŠØ¦Ø§Øª
 
-// åÐÇ ÇáãÊÛíÑ ÓíÎÒä ÇáãåãÉ ÇáÍÇáíÉ Ýí ÐÇßÑÉ ÇáÎÇÏã
-let currentTask = {
-    signal: false,
-    task: null,
-    player_id: null,
-    timestamp: null
-};
+// 1. ØªÙ‡ÙŠØ¦Ø© Ø§Ù„Ø¨ÙˆØª
+// Ù†Ø³ØªØ®Ø¯Ù… GatewayIntentBits.Guilds ÙÙ‚Ø· Ù„Ø£Ù†Ù‡ ÙƒØ§ÙÙ Ù„Ø£ÙˆØ§Ù…Ø± Slash Commands
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// 1. äÞØÉ ÇáæÕæá ÇáÊí íÓÊÏÚíåÇ ÈæÊ ÇáÏíÓßæÑÏ áæÖÚ ãåãÉ ÌÏíÏÉ
-app.post('/set-command', (req, res) => {
-    const { task, player_id } = req.body;
+// 2. Ù…ØªØºÙŠØ±Ø§Øª Ø§Ù„Ø¨ÙŠØ¦Ø©
+// Ù†Ø³ØªØ®Ø¯Ù… DISCORD_TOKEN Ùˆ BACKEND_URL Ù…Ù† Ù…ØªØºÙŠØ±Ø§Øª Ø¨ÙŠØ¦Ø© Railway
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const BACKEND_URL = process.env.BACKEND_URL;
 
-    // ÊÍÞÞ ÈÓíØ ãä ÇáÈíÇäÇÊ
-    if (!task || !player_id) {
-        return res.status(400).json({ error: 'Missing task or player_id' });
-    }
-
-    // ÊÍÏíË ÇáãåãÉ ÇáÍÇáíÉ æÊÝÚíá ÇáÅÔÇÑÉ
-    currentTask = {
-        signal: true,
-        task: task,
-        player_id: player_id,
-        timestamp: new Date().toISOString() // æÞÊ ÅäÔÇÁ ÇáãåãÉ
-    };
-    
-    console.log('New command set:', currentTask);
-    res.status(200).json({ message: 'Command set successfully!', data: currentTask });
-
-    // ÅÚÇÏÉ ÊÚííä ÇáÅÔÇÑÉ ÊáÞÇÆíðÇ ÈÚÏ 5 ÏÞÇÆÞ
-    setTimeout(() => {
-        currentTask.signal = false;
-        console.log('Signal automatically turned off after 5 minutes.');
-    }, 5 * 60 * 1000); // 5 ÏÞÇÆÞ
-});
-
-// 2. äÞØÉ ÇáæÕæá ÇáÊí íÝÍÕåÇ ÇáãæÏ ÈÔßá ÏæÑí (ßá 30-60 ËÇäíÉ)
-app.get('/check-for-signal', (req, res) => {
-    res.status(200).json({ signal: currentTask.signal });
-});
-
-// 3. äÞØÉ ÇáæÕæá ÇáÊí íÌáÈ ãäåÇ ÇáãæÏ ÊÝÇÕíá ÇáãåãÉ
-app.get('/get-task', (req, res) => {
-    // äÑÓá ÇáãåãÉ ÝÞØ ÅÐÇ ßÇäÊ ÇáÅÔÇÑÉ ãÝÚáÉ
-    if (currentTask.signal) {
-        res.status(200).json({ 
-            task: currentTask.task, 
-            player_id: currentTask.player_id,
-            timestamp: currentTask.timestamp
-        });
-    } else {
-        // ÅÐÇ áã Êßä åäÇß ÅÔÇÑÉ¡ äÑÓá ÑÏÇð ÝÇÑÛÇð
-        res.status(200).json({ task: null });
+// 3. Ø¹Ù†Ø¯ Ø¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„Ø¨ÙˆØª
+client.once('ready', () => {
+    console.log(`Bot is online! Logged in as ${client.user.tag}`);
+    console.log(`Backend URL: ${BACKEND_URL}`);
+    // ØªØ£ÙƒÙŠØ¯ ÙˆØ¬ÙˆØ¯ Ø§Ù„ØªÙˆÙƒÙ† (Ù„Ù„ØªØ´Ø®ÙŠØµ)
+    if (!DISCORD_TOKEN) {
+        console.error("FATAL ERROR: DISCORD_TOKEN is missing!");
     }
 });
 
-// äÞØÉ æÕæá ÇÝÊÑÇÖíÉ ááÊÍÞÞ ãä Ãä ÇáÎÇÏã íÚãá
-app.get('/', (req, res) => {
-    res.send('Avakin Backend Server is running!');
+// 4. Ø§Ù„ØªØ¹Ø§Ù…Ù„ Ù…Ø¹ Ø§Ù„Ø£ÙˆØ§Ù…Ø±
+client.on('interactionCreate', async interaction => {
+    // Ù†ØªØ£ÙƒØ¯ ÙÙ‚Ø· Ù…Ù† Ø§Ù„ØªØ¹Ø§Ù…Ù„ Ù…Ø¹ Ø£ÙˆØ§Ù…Ø± Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ (Slash Commands)
+    if (!interaction.isCommand()) return;
+
+    const { commandName } = interaction;
+
+    if (commandName === 'like') {
+        // Ø§Ù„Ø±Ø¯ Ø§Ù„ÙÙˆØ±ÙŠ Ù„ØªØ¬Ù†Ø¨ Ø§Ù†ØªÙ‡Ø§Ø¡ Ù…Ù‡Ù„Ø© Ø§Ù„ØªÙØ§Ø¹Ù„ (3 Ø«ÙˆØ§Ù†ÙŠ)
+        await interaction.deferReply({ ephemeral: false });
+
+        // Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ù…Ø¹Ø±Ù Ø§Ù„Ù„Ø§Ø¹Ø¨ Ù…Ù† Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ø£Ù…Ø±
+        const playerId = interaction.options.getString('player_id');
+
+        if (!playerId) {
+            return interaction.editReply({ content: 'Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ­Ø¯ÙŠØ¯ Ù…Ø¹Ø±Ù Ø§Ù„Ù„Ø§Ø¹Ø¨ Ø§Ù„ØµØ­ÙŠØ­. Ù…Ø«Ø§Ù„: `/like 12345678`' });
+        }
+
+        try {
+            // Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø£Ù…Ø± Ø¥Ù„Ù‰ Ø§Ù„Ø®Ø§Ø¯Ù… Ø§Ù„Ø®Ù„ÙÙŠ (Vercel)
+            const response = await axios.post(`${BACKEND_URL}/set-command`, {
+                task: 'like', // Ù†ÙˆØ¹ Ø§Ù„Ù…Ù‡Ù…Ø©
+                player_id: playerId // Ù…Ø¹Ø±Ù Ø§Ù„Ù„Ø§Ø¹Ø¨
+            });
+
+            if (response.status === 200) {
+                // Ø§Ù„Ø±Ø¯ Ø¨ØªØ£ÙƒÙŠØ¯ Ù†Ø¬Ø§Ø­ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„
+                await interaction.editReply({ content: `âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø£Ù…Ø± Ø§Ù„Ø¥Ø¹Ø¬Ø§Ø¨ Ø¨Ù†Ø¬Ø§Ø­ Ù„Ù„Ø§Ø¹Ø¨ ID: **${playerId}**. Ø³ÙŠØªÙ… ØªÙ†ÙÙŠØ°Ù‡ Ø¨ÙˆØ§Ø³Ø·Ø© Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…ÙˆØ¯Ø§Øª Ø§Ù„Ù†Ø´Ø·Ø© Ø®Ù„Ø§Ù„ 30 Ø«Ø§Ù†ÙŠØ©.` });
+            } else {
+                // Ø§Ù„Ø±Ø¯ ÙÙŠ Ø­Ø§Ù„Ø© ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù… Ø§Ù„Ø®Ù„ÙÙŠ
+                await interaction.editReply({ content: `âŒ Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø£Ù…Ø± Ø¥Ù„Ù‰ Ø§Ù„Ø®Ø§Ø¯Ù… Ø§Ù„Ø®Ù„ÙÙŠ. Ø§Ù„Ø­Ø§Ù„Ø©: ${response.status}.` });
+            }
+        } catch (error) {
+            console.error('Error sending command to backend:', error.message);
+            // Ø§Ù„Ø±Ø¯ ÙÙŠ Ø­Ø§Ù„Ø© ÙˆØ¬ÙˆØ¯ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„
+            await interaction.editReply({ content: 'âŒ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù… Ø§Ù„Ø®Ù„ÙÙŠ. Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø§Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø£Ù† Ù…ØªØºÙŠØ± `BACKEND_URL` ØµØ­ÙŠØ­ ÙˆÙŠØ¹Ù…Ù„.' });
+        }
+    }
 });
 
-
-// ÊÕÏíÑ ÇáÊØÈíÞ áíÚãá Úáì Vercel
-module.exports = app;
+// 5. ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¥Ù„Ù‰ Ø¯ÙŠØ³ÙƒÙˆØ±Ø¯
+if (!DISCORD_TOKEN) {
+    console.error("FATAL ERROR: DISCORD_TOKEN is not set. Bot cannot log in.");
+} else {
+    client.login(DISCORD_TOKEN).catch(err => {
+        console.error("Failed to log in to Discord. Check DISCORD_TOKEN validity.", err);
+    });
+}
